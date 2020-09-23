@@ -93,6 +93,28 @@ IF NOT EXISTS (
 	SELECT 1
 	FROM INFORMATION_SCHEMA.TABLES
 	WHERE TABLE_SCHEMA = 'sqlagent'
+	AND TABLE_NAME = 'ExcludeActiveJobs'
+)
+CREATE TABLE [sqlagent].[ExcludeActiveJobs] (
+	[JobID]			UNIQUEIDENTIFIER
+)
+GO
+
+
+-- Exclude these jobs from the ActiveJobs
+INSERT [sqlagent].[ExcludeActiveJobs] (
+	[JobID]
+)
+SELECT
+	[job_id]
+FROM msdb.dbo.sysjobs
+WHERE [name] = 'SQL AGENT DATA MART ETL';
+
+
+IF NOT EXISTS (
+	SELECT 1
+	FROM INFORMATION_SCHEMA.TABLES
+	WHERE TABLE_SCHEMA = 'sqlagent'
 	AND TABLE_NAME = 'ActiveJobsRefresh'
 )
 CREATE TABLE [sqlagent].[ActiveJobsRefresh] (
@@ -123,9 +145,12 @@ BEGIN
 		,	a.[last_executed_step_date]
 		FROM msdb.dbo.sysjobactivity a
 		JOIN msdb.dbo.sysjobs j ON j.job_id = a.job_id
+		LEFT JOIN [sqlagent].[ExcludeActiveJobs] e
+		ON e.[JobID] = a.[job_id]
 		WHERE a.session_id = @SESSION_ID
 		AND a.start_execution_date IS NOT NULL
 		AND stop_execution_date IS NULL
+		AND e.[JobID] IS NOT NULL
 	)
 	,	
 	CTE_JOB_HISTORY AS (
