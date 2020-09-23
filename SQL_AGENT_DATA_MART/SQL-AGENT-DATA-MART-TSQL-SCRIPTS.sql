@@ -7,55 +7,56 @@
 USE [master]
 GO
 
-
 -- create database if it doesn't exist
-IF DATABASEPROPERTYEX (N'SQL_AGENT_DATA_MART', N'Version') IS NULL
+IF DATABASEPROPERTYEX (N'DBA', N'Version') IS NULL
 BEGIN
-	CREATE DATABASE [SQL_AGENT_DATA_MART];
+	CREATE DATABASE [DBA];
+
+	ALTER DATABASE [DBA]
+	SET RECOVERY SIMPLE;
 END
 GO
 
 
-USE [SQL_AGENT_DATA_MART]
+USE [DBA]
 GO
 
 
-CREATE SEQUENCE dbo.RefreshKey  
+IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE [name] = 'sqlagent')
+BEGIN
+	EXEC sp_executesql @stmt = N'CREATE SCHEMA [sqlagent]';
+END
+GO
+
+
+-- TO DO: add conditional create
+CREATE SEQUENCE [sqlagent].[RefreshKey]  
     START WITH 1  
     INCREMENT BY 1;  
 GO  
 
 
-CREATE OR ALTER PROCEDURE dbo.[SQL_AGENT_DATA_MART_ETL]
+CREATE OR ALTER PROCEDURE [sqlagent].[SimulateJobStepDuration]
+	@MINIMUM_MINUTES	INT = 1
+,	@MAXIMUM_MINUTES	INT = 10
 AS
 BEGIN
+	-- convert to range of seconds
 	DECLARE
-		@TODAY			DATE = GETDATE()
-	,	@SESSION_ID		INT
-	,	@REFRESH_KEY	INT = NEXT VALUE FOR dbo.RefreshKey;
+		@MINIMUM_SECONDS		INT = @MINIMUM_MINUTES * 60
+	,	@MAXIMUM_SECONDS		INT = @MAXIMUM_MINUTES * 60
+	,	@STEP_DURATION_SECONDS	INT = 0
+	,	@WAIT_FOR				VARCHAR(10);
 
-	SELECT
-		@SESSION_ID = MAX(session_id)
-	FROM msdb.dbo.syssessions;
+	WHILE @STEP_DURATION_SECONDS < @MINIMUM_SECONDS
+	BEGIN
+		SET @STEP_DURATION_SECONDS = FLOOR(RAND() * @MAXIMUM_SECONDS);
+	END
 
-	SELECT 
-		@REFRESH_KEY	AS [RefreshKey]
-	,	[job_id]
-	,	[start_execution_date]
-	,	[last_executed_step_id]
-	,	[last_executed_step_date]
-	,	*
-	FROM msdb.dbo.sysjobactivity
-	WHERE session_id = @SESSION_ID
-	AND stop_execution_date IS NULL
-	AND start_execution_date > @TODAY;
+	SELECT @STEP_DURATION_SECONDS;
 
-
+	--WAITFOR DELAY = '00:05';
 END
-GO
-
-
-EXEC dbo.[SQL_AGENT_DATA_MART_ETL];
 
 
 
