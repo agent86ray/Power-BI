@@ -175,7 +175,7 @@ BEGIN
 		WHERE a.session_id = @SESSION_ID
 		AND a.start_execution_date IS NOT NULL
 		AND stop_execution_date IS NULL
-		AND e.[JobID] IS NOT NULL
+		AND e.[JobID] IS NULL
 	)
 	,	
 	CTE_JOB_HISTORY AS (
