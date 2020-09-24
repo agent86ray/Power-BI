@@ -264,6 +264,18 @@ AS
 GO
 
 
+CREATE OR ALTER PROCEDURE [sqlagent].[DeleteActiveJobsHistory]
+AS
+BEGIN
+	DECLARE 
+		@TODAY	DATE = GETDATE();
+
+	DELETE a
+	FROM [sqlagent].[ActiveJobs] a
+	JOIN [sqlagent].[ActiveJobsRefresh] r
+	ON a.[RefreshKey] = r.[RefreshKey]
+	WHERE [RefreshDate] < @TODAY;
+END
 
 
 
