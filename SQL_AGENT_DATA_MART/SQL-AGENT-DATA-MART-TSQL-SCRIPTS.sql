@@ -142,7 +142,96 @@ END
 GO
 
 
+-- JobStepInstance Table
+IF NOT EXISTS (
+	SELECT 1
+	FROM INFORMATION_SCHEMA.TABLES
+	WHERE TABLE_SCHEMA = 'dbo'
+	AND TABLE_NAME = 'JobStepInstance'
+)
+BEGIN
+	CREATE TABLE [dbo].[JobStepInstance] (
+		[job_id]			UNIQUEIDENTIFIER	NOT NULL
+	,	[job_instance]		BIGINT				NOT NULL
+	,	[step_id]			INT					NOT NULL
+	,	[start_time]		DATETIME			NOT NULL
+	,	[end_time]			DATETIME			NOT NULL
+	,	[duration_seconds]	INT					NOT NULL
+	,	[run_status]		INT					NOT NULL
+	,	[retries_attempted]	INT					NOT NULL
+	,	[step_count]		SMALLINT			NOT NULL
+		CONSTRAINT PK_JobStepInstance
+			PRIMARY KEY CLUSTERED ([job_id], [job_instance], [step_id])
+	)	
+END
+GO
 
+
+CREATE OR ALTER PROCEDURE [dbo].[LoadJobStepInstance]
+AS 
+BEGIN
+	TRUNCATE TABLE [dbo].[JobStepInstance];
+
+	;WITH CTE_JOB_STEP_OUTCOME AS (
+		SELECT
+			[job_id]
+		,	[step_id]
+		,	msdb.dbo.agent_datetime(run_date, run_time) AS [start_time]
+		,	DATEADD(
+				second
+			,	[run_duration] / 10000 * 3600 +			-- convert hours to seconds
+				([run_duration] % 10000) / 100 * 60 +	-- convert minutes to seconds
+				([run_duration] % 10000) % 100			-- get seconds
+			,	msdb.dbo.agent_datetime(run_date, run_time)) [end_time]
+			,	[run_duration] / 10000 * 3600 +			-- convert hours to seconds
+				([run_duration] % 10000) / 100 * 60 +	-- convert minutes to seconds
+				([run_duration] % 10000) % 100			-- get seconds
+					AS [duration_seconds]
+		,	[run_status]
+		,	[retries_attempted]
+		FROM msdb.dbo.sysjobhistory
+		WHERE [step_id] > 0
+		AND [run_status] = 1
+	)
+
+	, CTE_JOB_STEP_OUTCOME_INSTANCE AS (
+		SELECT
+			s.[job_id]
+		,	j.[job_instance]
+		,	s.[step_id]
+		,	s.[start_time]
+		,	s.[end_time]
+		,	s.[duration_seconds]
+		,	s.[run_status]
+		,	s.[retries_attempted]
+		FROM CTE_JOB_STEP_OUTCOME s
+		JOIN [dbo].[JobInstance] j
+		ON j.[job_id] = s.[job_id] 
+		WHERE s.[start_time] BETWEEN j.[start_time] AND j.[end_time]
+	)
+
+	INSERT [dbo].[JobStepInstance] (
+		[job_id]
+	,	[job_instance]
+	,	[step_id]
+	,	[start_time]
+	,	[end_time]
+	,	[duration_seconds]
+	,	[run_status]
+	,	[retries_attempted]
+	)
+	SELECT
+		[job_id]
+	,	[job_instance]
+	,	[step_id]
+	,	[start_time]
+	,	[end_time]
+	,	[duration_seconds]
+	,	[run_status]
+	,	[retries_attempted]
+	FROM CTE_JOB_STEP_OUTCOME_INSTANCE;
+END
+GO
 
 
 
