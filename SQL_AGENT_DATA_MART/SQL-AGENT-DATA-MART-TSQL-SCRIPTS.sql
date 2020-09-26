@@ -142,6 +142,49 @@ END
 GO
 
 
+-- JobAverageDuration table
+IF NOT EXISTS (
+	SELECT 1
+	FROM INFORMATION_SCHEMA.TABLES
+	WHERE TABLE_SCHEMA = 'dbo'
+	AND TABLE_NAME = 'JobAverageDuration'
+)
+BEGIN
+	CREATE TABLE [dbo].[JobAverageDuration] (
+		[job_id]					UNIQUEIDENTIFIER	NOT NULL
+	,	[execution_count]			INT					NOT NULL
+	,	[average_duration_seconds]	INT					NOT NULL
+	,	[average_retries_attempted]	INT					NOT NULL
+		CONSTRAINT PK_JobAverageDuration
+			PRIMARY KEY CLUSTERED ([job_id])
+	)	
+END
+GO
+
+
+CREATE OR ALTER PROCEDURE [dbo].[CalculateJobAverageDuration]
+AS
+BEGIN
+	TRUNCATE TABLE [dbo].[JobAverageDuration];
+
+	INSERT [dbo].[JobAverageDuration] (
+		[job_id]					
+	,	[execution_count]			
+	,	[average_duration_seconds]	
+	,	[average_retries_attempted]
+	)
+	SELECT
+		[job_id]
+	,	COUNT(*)
+	,	AVG([duration_seconds])
+	,	AVG([retries_attempted])
+	FROM [dbo].[JobInstance]
+	GROUP BY [job_id];
+END
+GO
+
+
+
 -- JobStepInstance Table
 IF NOT EXISTS (
 	SELECT 1
