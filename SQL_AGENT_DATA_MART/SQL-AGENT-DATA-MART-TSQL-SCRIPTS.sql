@@ -163,7 +163,6 @@ BEGIN
 	,	[duration_seconds]	INT					NOT NULL
 	,	[run_status]		INT					NOT NULL
 	,	[retries_attempted]	INT					NOT NULL
-	,	[step_count]		SMALLINT			NOT NULL
 		CONSTRAINT PK_JobStepInstance
 			PRIMARY KEY CLUSTERED ([job_id], [job_instance], [step_id], [start_time])
 	)	
@@ -237,6 +236,61 @@ BEGIN
 	,	[run_status]
 	,	[retries_attempted]
 	FROM CTE_JOB_STEP_OUTCOME_INSTANCE;
+END
+GO
+
+
+-- JobStepInstanceAllStepsCompleted
+IF NOT EXISTS (
+	SELECT 1
+	FROM INFORMATION_SCHEMA.TABLES
+	WHERE TABLE_SCHEMA = 'dbo'
+	AND TABLE_NAME = 'JobStepInstanceAllStepsCompleted'
+)
+BEGIN
+	CREATE TABLE [dbo].[JobStepInstanceAllStepsCompleted] (
+		[job_id]				UNIQUEIDENTIFIER	NOT NULL
+	,	[job_instance]			INT					NOT NULL
+		CONSTRAINT PK_JobStepInstanceAllStepsCompleted
+			PRIMARY KEY CLUSTERED ([job_id], [job_instance])
+	)	
+END
+GO
+
+
+CREATE OR ALTER PROCEDURE [dbo].[LoadJobStepInstanceAllStepsCompleted]
+AS
+BEGIN
+	TRUNCATE TABLE [dbo].[JobStepInstanceAllStepsCompleted];
+
+	;WITH CTE_JOB_INSTANCE_STEPS_COMPLETED AS (
+		-- Get the list of steps completed for each job and job instance
+		SELECT DISTINCT
+			s.[job_id]
+		,	s.[job_instance]
+		,	s.[step_id]
+		FROM [dbo].[JobStepInstance] s
+	)
+
+	, CTE_JOB_INSTANCE_STEP_EXECUTED_COUNT AS (
+		SELECT
+			[job_id]
+		,	[job_instance]
+		,	COUNT(*)	AS [step_execution_count]
+		FROM CTE_JOB_INSTANCE_STEPS_COMPLETED 
+		GROUP BY [job_id], [job_instance]
+	)
+
+	INSERT [dbo].[JobStepInstanceAllStepsCompleted] (
+		[job_id]				
+	,	[job_instance]			
+	)
+	SELECT
+			s.[job_id]
+		,	s.[job_instance]
+	FROM CTE_JOB_INSTANCE_STEP_EXECUTED_COUNT s	
+	JOIN [dbo].[Job] j ON j.[job_id] = s.[job_id]
+	WHERE s.[step_execution_count] = j.[step_count];
 END
 GO
 
