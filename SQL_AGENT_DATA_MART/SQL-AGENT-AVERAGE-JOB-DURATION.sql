@@ -46,12 +46,15 @@ WHERE [job_id] = '8D554A8D-58F6-47C6-BAF3-D92C461060C9'
 
 
 -- Get the current number of steps in each job
-;WITH CTE_JOB_STEPS AS (
+;WITH CTE_JOB_STEPS_COUNT AS (
 	SELECT
-		[job_id]
+		j.[job_id]
+	,	j.[name]
 	,	COUNT(*)	AS [job_step_count]
-	FROM msdb.dbo.sysjobsteps
-	GROUP BY [job_id]
+	FROM msdb.dbo.sysjobsteps s
+	JOIN msdb.dbo.sysjobs j
+	ON j.[job_id] = s.[job_id]
+	GROUP BY j.[job_id], j.[name]
 )
 
 , CTE_JOB_OUTCOME AS (
@@ -72,15 +75,17 @@ WHERE [job_id] = '8D554A8D-58F6-47C6-BAF3-D92C461060C9'
 	,	[retries_attempted]
 	,	s.[job_step_count]
 	FROM msdb.dbo.sysjobhistory h
-	JOIN CTE_JOB_STEPS s
+	JOIN CTE_JOB_STEPS_COUNT s
 	ON s.[job_id] = h.[job_id]
 	WHERE [step_id] = 0
 	AND [run_status] = 1
 )
 
---
---SELECT * FROM CTE_JOB_OUTCOME
---
+/*
+SELECT * FROM CTE_JOB_OUTCOME
+WHERE [job_id] = '8D554A8D-58F6-47C6-BAF3-D92C461060C9'
+ORDER BY [job_id], [start_time] DESC
+*/
 
 , CTE_JOB_OUTCOME_INSTANCE AS (
 	SELECT
@@ -98,9 +103,13 @@ WHERE [job_id] = '8D554A8D-58F6-47C6-BAF3-D92C461060C9'
 	FROM CTE_JOB_OUTCOME
 )
 
---
---SELECT * FROM CTE_JOB_OUTCOME_INSTANCE
---
+/*
+
+SELECT * FROM CTE_JOB_OUTCOME_INSTANCE
+WHERE [job_id] = '8D554A8D-58F6-47C6-BAF3-D92C461060C9'
+ORDER BY [job_id], [start_time] DESC
+
+*/
 
 , CTE_JOB_STEP_OUTCOME AS (
 	SELECT
@@ -124,6 +133,14 @@ WHERE [job_id] = '8D554A8D-58F6-47C6-BAF3-D92C461060C9'
 	AND [run_status] = 1
 )
 
+/*
+
+SELECT * FROM CTE_JOB_STEP_OUTCOME
+WHERE [job_id] = '8D554A8D-58F6-47C6-BAF3-D92C461060C9'
+ORDER BY [job_id], [start_time] DESC
+
+*/
+
 , CTE_JOB_STEP_OUTCOME_INSTANCE AS (
 	SELECT
 		s.[job_id]
@@ -140,15 +157,19 @@ WHERE [job_id] = '8D554A8D-58F6-47C6-BAF3-D92C461060C9'
 	WHERE s.[start_time] BETWEEN j.[start_time] AND j.[end_time]
 )
 
---
---SELECT * FROM CTE_JOB_STEP_OUTCOME_INSTANCE 
---
+/*
 
-, JOB_STEP_DURATION AS (
+SELECT * FROM CTE_JOB_STEP_OUTCOME_INSTANCE
+WHERE [job_id] = '8D554A8D-58F6-47C6-BAF3-D92C461060C9'
+ORDER BY [job_id], [start_time] DESC
+
+*/
+
+, CTE_JOB_STEP_DURATION AS (
 	SELECT
 		j.[job_id]
 	,	j.[job_instance]
-	,	COUNT(*)	AS [executed_steps]
+	,	COUNT(*)					AS [executed_steps]
 	,	SUM(s.[duration_seconds])	AS [duration_seconds]
 	FROM CTE_JOB_STEP_OUTCOME_INSTANCE s
 	JOIN CTE_JOB_OUTCOME_INSTANCE j
@@ -157,14 +178,26 @@ WHERE [job_id] = '8D554A8D-58F6-47C6-BAF3-D92C461060C9'
 	GROUP BY j.[job_id], j.[job_instance]
 )
 
+/*
+
+SELECT * FROM CTE_JOB_STEP_DURATION
+WHERE [job_id] = '8D554A8D-58F6-47C6-BAF3-D92C461060C9'
+ORDER BY [job_id], [job_instance] DESC
+
+*/
+
 SELECT 
-	d.[job_id]
+--	d.[job_id]
+ 	s.[name]
 ,	d.[job_instance]
 ,	s.[job_step_count]
 ,	d.[executed_steps]
 ,	d.[duration_seconds]
-FROM JOB_STEP_DURATION d
-JOIN CTE_JOB_STEPS s ON s.[job_id] = d.[job_id]
-ORDER BY d.[job_id], d.[job_instance]
+FROM CTE_JOB_STEP_DURATION d
+JOIN CTE_JOB_STEPS_COUNT s ON s.[job_id] = d.[job_id]
+
+WHERE d.[job_id] = '8D554A8D-58F6-47C6-BAF3-D92C461060C9'
+
+ORDER BY d.[job_id], d.[job_instance] DESC
 
 
