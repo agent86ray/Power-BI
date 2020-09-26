@@ -1,0 +1,170 @@
+
+/*
+
+	Recalculate average job duration for the entire history in the 
+	msdb.dbo.sysjobhistory table. Calculate at the job and step level.
+	This will provide 2 metrics for the estimated completion time for
+	jobs that are currently running:
+	
+	1 - Add the average job duration to the job start time  
+	2 - Add the sum of the average duration of the remaining job steps
+	    to the current time
+
+	Notes from msdb.dbo.sysjobhistory
+
+	When a job ends, a row is written to the table with the step_id = 0
+	and step_name = (Job outcome). The run_date and run_time of the first 
+	step executed in the job will equal the run_date and run_time in the 
+	Job outcome row.
+	
+	 
+*/
+
+
+/*
+-- gather all data for specified job
+SELECT
+	[step_id]
+,	[step_name]
+,	msdb.dbo.agent_datetime(run_date, run_time) AS [start_time]
+,	DATEADD(
+		second
+	,	[run_duration] / 10000 * 3600 +			-- convert hours to seconds
+		([run_duration] % 10000) / 100 * 60 +	-- convert minutes to seconds
+		([run_duration] % 10000) % 100			-- get seconds
+	,	msdb.dbo.agent_datetime(run_date, run_time)) [end_time]
+	,	[run_duration] / 10000 * 3600 +			-- convert hours to seconds
+		([run_duration] % 10000) / 100 * 60 +	-- convert minutes to seconds
+		([run_duration] % 10000) % 100			-- get seconds
+			AS [duration_seconds]
+,	[run_status]
+,	[retries_attempted]
+FROM msdb.dbo.sysjobhistory
+WHERE [job_id] = '8D554A8D-58F6-47C6-BAF3-D92C461060C9'
+*/
+
+
+
+-- Get the current number of steps in each job
+;WITH CTE_JOB_STEPS AS (
+	SELECT
+		[job_id]
+	,	COUNT(*)	AS [job_step_count]
+	FROM msdb.dbo.sysjobsteps
+	GROUP BY [job_id]
+)
+
+, CTE_JOB_OUTCOME AS (
+	SELECT
+		h.[job_id]
+	,	msdb.dbo.agent_datetime(run_date, run_time) AS [start_time]
+	,	DATEADD(
+			second
+		,	[run_duration] / 10000 * 3600 +			-- convert hours to seconds
+			([run_duration] % 10000) / 100 * 60 +	-- convert minutes to seconds
+			([run_duration] % 10000) % 100			-- get seconds
+		,	msdb.dbo.agent_datetime(run_date, run_time)) [end_time]
+		,	[run_duration] / 10000 * 3600 +			-- convert hours to seconds
+			([run_duration] % 10000) / 100 * 60 +	-- convert minutes to seconds
+			([run_duration] % 10000) % 100			-- get seconds
+				AS [duration_seconds]
+	,	[run_status]
+	,	[retries_attempted]
+	,	s.[job_step_count]
+	FROM msdb.dbo.sysjobhistory h
+	JOIN CTE_JOB_STEPS s
+	ON s.[job_id] = h.[job_id]
+	WHERE [step_id] = 0
+	AND [run_status] = 1
+)
+
+--
+--SELECT * FROM CTE_JOB_OUTCOME
+--
+
+, CTE_JOB_OUTCOME_INSTANCE AS (
+	SELECT
+		[job_id]
+	,	ROW_NUMBER() OVER (
+			PARTITION BY [job_id]
+			ORDER BY [job_id], [start_time]
+		)	AS [job_instance]
+	,	[start_time]
+	,	[end_time]
+	,	[duration_seconds]
+	,	[run_status]
+	,	[retries_attempted]
+	,	[job_step_count]
+	FROM CTE_JOB_OUTCOME
+)
+
+--
+--SELECT * FROM CTE_JOB_OUTCOME_INSTANCE
+--
+
+, CTE_JOB_STEP_OUTCOME AS (
+	SELECT
+		[job_id]
+	,	[step_id]
+	,	msdb.dbo.agent_datetime(run_date, run_time) AS [start_time]
+	,	DATEADD(
+			second
+		,	[run_duration] / 10000 * 3600 +			-- convert hours to seconds
+			([run_duration] % 10000) / 100 * 60 +	-- convert minutes to seconds
+			([run_duration] % 10000) % 100			-- get seconds
+		,	msdb.dbo.agent_datetime(run_date, run_time)) [end_time]
+		,	[run_duration] / 10000 * 3600 +			-- convert hours to seconds
+			([run_duration] % 10000) / 100 * 60 +	-- convert minutes to seconds
+			([run_duration] % 10000) % 100			-- get seconds
+				AS [duration_seconds]
+	,	[run_status]
+	,	[retries_attempted]
+	FROM msdb.dbo.sysjobhistory
+	WHERE [step_id] > 0
+	AND [run_status] = 1
+)
+
+, CTE_JOB_STEP_OUTCOME_INSTANCE AS (
+	SELECT
+		s.[job_id]
+	,	j.[job_instance]
+	,	s.[step_id]
+	,	s.[start_time]
+	,	s.[end_time]
+	,	s.[duration_seconds]
+	,	s.[run_status]
+	,	s.[retries_attempted]
+	FROM CTE_JOB_STEP_OUTCOME s
+	JOIN CTE_JOB_OUTCOME_INSTANCE j
+	ON j.[job_id] = s.[job_id] 
+	WHERE s.[start_time] BETWEEN j.[start_time] AND j.[end_time]
+)
+
+--
+--SELECT * FROM CTE_JOB_STEP_OUTCOME_INSTANCE 
+--
+
+, JOB_STEP_DURATION AS (
+	SELECT
+		j.[job_id]
+	,	j.[job_instance]
+	,	COUNT(*)	AS [executed_steps]
+	,	SUM(s.[duration_seconds])	AS [duration_seconds]
+	FROM CTE_JOB_STEP_OUTCOME_INSTANCE s
+	JOIN CTE_JOB_OUTCOME_INSTANCE j
+	ON j.[job_id] = s.[job_id]
+	WHERE s.[start_time] BETWEEN j.[start_time] AND j.[end_time]
+	GROUP BY j.[job_id], j.[job_instance]
+)
+
+SELECT 
+	d.[job_id]
+,	d.[job_instance]
+,	s.[job_step_count]
+,	d.[executed_steps]
+,	d.[duration_seconds]
+FROM JOB_STEP_DURATION d
+JOIN CTE_JOB_STEPS s ON s.[job_id] = d.[job_id]
+ORDER BY d.[job_id], d.[job_instance]
+
+
