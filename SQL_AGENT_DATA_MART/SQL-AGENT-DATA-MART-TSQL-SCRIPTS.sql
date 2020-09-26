@@ -320,63 +320,21 @@ AS
 BEGIN
 	TRUNCATE TABLE [dbo].[JobStepAverageDuration];
 
-	;WITH CTE_JOB_STEP_DURATION_EXECUTED_STEPS AS (
-		SELECT
-			j.[job_id]
-		,	j.[job_instance]
-		,	COUNT(*)					AS [executed_steps]
-		,	SUM(s.[duration_seconds])	AS [duration_seconds]
-		FROM [dbo].[JobStepInstance] s
-		JOIN [dbo].[JobInstance] j
-		ON j.[job_id] = s.[job_id]
-		WHERE s.[start_time] BETWEEN j.[start_time] AND j.[end_time]
-		GROUP BY j.[job_id], j.[job_instance]
-	)
-
-	, CTE_JOB_STEP_JOB_STEP_COUNT AS (
-		SELECT 
-			e.[job_id]
-		 ,	j.[name]
-		,	e.[job_instance]
-		,	j.[step_count]
-		,	e.[executed_steps]
-		,	e.[duration_seconds]
-		FROM CTE_JOB_STEP_DURATION_EXECUTED_STEPS  e
-		JOIN [dbo].[Job] j ON j.[job_id] = e.[job_id]
-	)
-
-	, CTE_JOBS_ALL_STEPS_SUCCEEDED AS (
-		SELECT
-			[job_id]
-		,	[job_instance]
-		FROM CTE_JOB_STEP_JOB_STEP_COUNT c
-		WHERE c.[step_count] = c.[executed_steps]
-	)
-
-	, CTE_CALCULATE_AVG_STEP_DURATION AS (
-		SELECT
-			s.[job_id]
-		,	s.[step_id]
-		,	COUNT(*)					AS [count]
-		,	AVG(s.[duration_seconds])	AS [avg_duration_seconds]
-		FROM CTE_JOBS_ALL_STEPS_SUCCEEDED j
-		JOIN [dbo].[JobStepInstance] s
-		ON s.[job_id] = j.[job_id] AND s.[job_instance] = j.[job_instance]
-		GROUP BY s.[job_id], s.[step_id]
-	) 
-
 	INSERT [dbo].[JobStepAverageDuration] (
 		[job_id]				
 	,	[step_id]				
 	,	[count]					
 	,	[avg_duration_seconds]	
 	)
-	SELECT 
-		[job_id]				
-	,	[step_id]				
-	,	[count]					
-	,	[avg_duration_seconds]	
-	FROM CTE_CALCULATE_AVG_STEP_DURATION; 
+	SELECT
+		s.[job_id]
+	,	s.[step_id]
+	,	COUNT(*)					AS [count]
+	,	AVG(s.[duration_seconds])	AS [avg_duration_seconds]
+	FROM [dbo].[JobStepInstanceAllStepsCompleted] j
+	JOIN [dbo].[JobStepInstance] s
+	ON s.[job_id] = j.[job_id] 
+	GROUP BY s.[job_id], s.[step_id];
 END
 GO
 
