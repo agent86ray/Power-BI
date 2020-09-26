@@ -7,32 +7,35 @@
 USE [master]
 GO
 
+
 -- create database if it doesn't exist
-IF DATABASEPROPERTYEX (N'DBA', N'Version') IS NULL
+IF DATABASEPROPERTYEX (N'SQL_AGENT_DATA_MART', N'Version') IS NULL
 BEGIN
-	CREATE DATABASE [DBA];
+	CREATE DATABASE [SQL_AGENT_DATA_MART];
 
-	ALTER DATABASE [DBA]
-	SET RECOVERY SIMPLE;
 END
 GO
 
 
-USE [DBA]
+ALTER DATABASE [SQL_AGENT_DATA_MART]
+SET RECOVERY SIMPLE;
 GO
 
 
-IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE [name] = 'sqlagent')
+USE [SQL_AGENT_DATA_MART]
+GO
+
+
+IF NOT EXISTS (
+	SELECT 1 
+	FROM sys.sequences
+	WHERE [name] = 'RefreshKey'
+)
 BEGIN
-	EXEC sp_executesql @stmt = N'CREATE SCHEMA [sqlagent]';
+	CREATE SEQUENCE [dbo].[RefreshKey]  
+		START WITH 1  
+		INCREMENT BY 1;  
 END
-GO
-
-
--- TO DO: add conditional create
-CREATE SEQUENCE [sqlagent].[RefreshKey]  
-    START WITH 1  
-    INCREMENT BY 1;  
 GO  
 
 
