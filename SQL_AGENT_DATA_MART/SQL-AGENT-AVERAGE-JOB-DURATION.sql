@@ -165,7 +165,7 @@ ORDER BY [job_id], [start_time] DESC
 
 */
 
-, CTE_JOB_STEP_DURATION AS (
+, CTE_JOB_STEP_DURATION_EXECUTED_STEPS AS (
 	SELECT
 		j.[job_id]
 	,	j.[job_instance]
@@ -178,26 +178,36 @@ ORDER BY [job_id], [start_time] DESC
 	GROUP BY j.[job_id], j.[job_instance]
 )
 
+, CTE_JOB_STEP_JOB_STEP_COUNT AS (
+	SELECT 
+		e.[job_id]
+	 ,	s.[name]
+	,	e.[job_instance]
+	,	s.[job_step_count]
+	,	e.[executed_steps]
+	,	e.[duration_seconds]
+	FROM CTE_JOB_STEP_DURATION_EXECUTED_STEPS  e
+	JOIN CTE_JOB_STEPS_COUNT s ON s.[job_id] = e.[job_id]
+)
+
 /*
 
-SELECT * FROM CTE_JOB_STEP_DURATION
+SELECT *
+FROM CTE_JOB_STEP_JOB_STEP_COUNT
 WHERE [job_id] = '8D554A8D-58F6-47C6-BAF3-D92C461060C9'
 ORDER BY [job_id], [job_instance] DESC
 
 */
 
-SELECT 
---	d.[job_id]
- 	s.[name]
-,	d.[job_instance]
-,	s.[job_step_count]
-,	d.[executed_steps]
-,	d.[duration_seconds]
-FROM CTE_JOB_STEP_DURATION d
-JOIN CTE_JOB_STEPS_COUNT s ON s.[job_id] = d.[job_id]
+, CTE_JOBS_ALL_STEPS_SUCCEEDED AS (
+	SELECT
+		[job_id]
+	,	[job_instance]
+	FROM CTE_JOB_STEP_JOB_STEP_COUNT c
+	WHERE c.[job_step_count] = c.[executed_steps]
+)
 
-WHERE d.[job_id] = '8D554A8D-58F6-47C6-BAF3-D92C461060C9'
-
-ORDER BY d.[job_id], d.[job_instance] DESC
-
-
+SELECT *
+FROM CTE_JOBS_ALL_STEPS_SUCCEEDED
+WHERE [job_id] = '8D554A8D-58F6-47C6-BAF3-D92C461060C9'
+ORDER BY [job_id], [job_instance];
