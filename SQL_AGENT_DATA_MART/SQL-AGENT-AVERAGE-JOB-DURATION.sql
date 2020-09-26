@@ -21,6 +21,10 @@
 */
 
 
+USE SQL_AGENT_DATA_MART
+GO
+
+
 /*
 -- gather all data for specified job
 SELECT
@@ -46,7 +50,7 @@ WHERE [job_id] = '8D554A8D-58F6-47C6-BAF3-D92C461060C9'
 
 
 -- Get the current number of steps in each job
-;WITH CTE_JOB_STEPS_COUNT AS (
+;WITH CTE_JOB_STEPS_COUNT AS (	--> table Job
 	SELECT
 		j.[job_id]
 	,	j.[name]
@@ -207,7 +211,29 @@ ORDER BY [job_id], [job_instance] DESC
 	WHERE c.[job_step_count] = c.[executed_steps]
 )
 
+/*
 SELECT *
 FROM CTE_JOBS_ALL_STEPS_SUCCEEDED
 WHERE [job_id] = '8D554A8D-58F6-47C6-BAF3-D92C461060C9'
 ORDER BY [job_id], [job_instance];
+*/
+
+, CTE_CALCULATE_AVG_STEP_DURATION AS (
+	SELECT
+		s.[job_id]
+	,	s.[step_id]
+	,	COUNT(*)					AS [count]
+	,	AVG(s.[duration_seconds])	AS [avg_duration_seconds]
+	FROM CTE_JOBS_ALL_STEPS_SUCCEEDED j
+	JOIN CTE_JOB_STEP_OUTCOME_INSTANCE s
+	ON s.[job_id] = j.[job_id] AND s.[job_instance] = j.[job_instance]
+	GROUP BY s.[job_id], s.[step_id]
+) 
+
+SELECT *
+FROM CTE_CALCULATE_AVG_STEP_DURATION 
+ORDER BY [job_id], [step_id]
+
+-- TO DO: calculate COUNT(*) and AVG DURATION based on jobs run successfully
+
+
