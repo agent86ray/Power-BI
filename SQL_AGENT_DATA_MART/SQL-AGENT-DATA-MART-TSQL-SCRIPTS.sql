@@ -333,7 +333,7 @@ BEGIN
 	,	AVG(s.[duration_seconds])	AS [avg_duration_seconds]
 	FROM [dbo].[JobStepInstanceAllStepsCompleted] j
 	JOIN [dbo].[JobStepInstance] s
-	ON s.[job_id] = j.[job_id] 
+	ON s.[job_id] = j.[job_id] AND s.[job_instance] = j.[job_instance]
 	GROUP BY s.[job_id], s.[step_id];
 END
 GO
@@ -371,12 +371,14 @@ BEGIN
 	,	[average_retries_attempted]
 	)
 	SELECT
-		[job_id]
+		j.[job_id]
 	,	COUNT(*)
 	,	AVG([duration_seconds])
 	,	AVG([retries_attempted])
-	FROM [dbo].[JobInstance]
-	GROUP BY [job_id];
+	FROM [dbo].[JobInstance] j
+	JOIN [dbo].[JobStepInstanceAllStepsCompleted] c
+	ON c.[job_id] = j.[job_id] AND c.[job_instance] = j.[job_instance]
+	GROUP BY j.[job_id];
 END
 GO
 
