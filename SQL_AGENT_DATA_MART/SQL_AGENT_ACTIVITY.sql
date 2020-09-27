@@ -102,7 +102,7 @@ IF NOT EXISTS (
 	AND TABLE_NAME = 'ExcludeActiveJobs'
 )
 CREATE TABLE [dbo].[ExcludeActiveJobs] (
-	[JobID]			UNIQUEIDENTIFIER
+	[job_id]		UNIQUEIDENTIFIER
 		CONSTRAINT PK_ExcludeActiveJobs
 			PRIMARY KEY CLUSTERED
 )
@@ -164,7 +164,7 @@ BEGIN
 		AND e.[JobID] IS NULL
 	)
 	,	
-	CTE_JOB_HISTORY AS (
+	CTE_DURATION AS (
 		SELECT
 			h.[job_id]
 		,	msdb.dbo.agent_datetime(run_date, run_time) AS [start_time]
