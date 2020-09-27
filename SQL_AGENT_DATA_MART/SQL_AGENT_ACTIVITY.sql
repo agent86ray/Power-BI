@@ -157,42 +157,31 @@ BEGIN
 		,	a.[last_executed_step_date]
 		FROM msdb.dbo.sysjobactivity a
 		LEFT JOIN [dbo].[ExcludeActiveJobs] e
-		ON e.[JobID] = a.[job_id]
+		ON e.[job_id] = a.[job_id]
 		WHERE a.session_id = @SESSION_ID
 		AND a.start_execution_date IS NOT NULL
 		AND stop_execution_date IS NULL
-		AND e.[JobID] IS NULL
+		AND e.[job_id] IS NULL
 	)
-	,	
-	CTE_DURATION AS (
+
+	--
+	--SELECT * FROM CTE_JOBS_RUNNING
+	--
+
+	, CTE_JOB_STEPS_REMAINING_DURATION AS (
 		SELECT
-			h.[job_id]
-		,	msdb.dbo.agent_datetime(run_date, run_time) AS [start_time]
-		,	DATEADD(
-				second
-			,	[run_duration] / 10000 * 3600 +			-- convert hours to seconds
-				([run_duration] % 10000) / 100 * 60 +	-- convert minutes to seconds
-				([run_duration] % 10000) % 100			-- get seconds
-			,	msdb.dbo.agent_datetime(run_date, run_time)) [end_time]
-		,	[run_duration] / 10000 * 3600 +			-- convert hours to seconds
-			([run_duration] % 10000) / 100 * 60 +	-- convert minutes to seconds
-			([run_duration] % 10000) % 100			-- get seconds
-				AS [duration_seconds]
+		 	a.[job_id]
+		,	SUM(d.[avg_duration_seconds]) [job_step_average_duration]
 		FROM CTE_JOBS_RUNNING a
-		JOIN msdb.dbo.sysjobhistory h
-		ON h.[job_id] = a.[job_id]
-		WHERE h.[step_id] = 0
-		AND h.[run_status] = 1
+		LEFT JOIN [dbo].[JobStepAverageDuration] d
+		ON d.[job_id] = a.[job_id]
+		WHERE d.[step_id] > COALESCE(a.[last_executed_step_id], 0)
+		GROUP BY a.[job_id]
 	)
-	,
-	CTE_JOB_AVERAGE_DURATION AS (
-		SELECT 
-			[job_id]
-		,	COUNT(*) AS [execution_count]
-		,	AVG([duration_seconds])	AS [average_duration]
-		FROM CTE_JOB_HISTORY
-		GROUP BY [job_id]
-	)
+
+	--
+	--SELECT * FROM CTE_JOB_STEPS_REMAINING_DURATION
+	--
 
 	INSERT [dbo].[ActiveJobs] (
 		[RefreshKey]
@@ -204,22 +193,24 @@ BEGIN
 	)
 	SELECT
 		@REFRESH_KEY
-	,	j.[job_id]	
-	,	DATEDIFF(second, j.[start_execution_date], GETDATE())	AS [current_duration]
-	,	d.[execution_count]
-	,	d.[average_duration]
+	,	a.[job_id]	
+	,	DATEDIFF(second, a.[start_execution_date], GETDATE())	AS [current_duration]
+	,	j.[execution_count]
+	,	d.[job_step_average_duration]	-- based on last step executed
 	,	CONVERT(
 			SMALLDATETIME
 		,
 			DATEADD(
 				second
-			,	d.[average_duration] - DATEDIFF(second, j.[start_execution_date], GETDATE())
-			, j.[start_execution_date]
+			,	d.[job_step_average_duration] + DATEDIFF(second, a.[start_execution_date], GETDATE())
+			, a.[start_execution_date]
 			) 
 		) AS [estimated_completion]
-	FROM CTE_JOBS_RUNNING j
-	LEFT JOIN CTE_JOB_AVERAGE_DURATION d
-	ON d.[job_id] = j.[job_id];
+	FROM CTE_JOBS_RUNNING a
+	LEFT JOIN CTE_JOB_STEPS_REMAINING_DURATION d
+	ON d.[job_id] = a.[job_id]
+	LEFT JOIN [dbo].[JobAverageDuration] j
+	ON j.[job_id] = a.[job_id];
 
 	INSERT [dbo].[ActiveJobsRefresh] (
 		[RefreshKey]
