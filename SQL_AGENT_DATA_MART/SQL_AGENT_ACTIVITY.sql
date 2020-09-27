@@ -84,13 +84,13 @@ IF NOT EXISTS (
 )
 CREATE TABLE [dbo].[ActiveJobs] (
 	[RefreshKey]			INT
-,	[JobName]				NVARCHAR(128)
+,	[job_id]				UNIQUEIDENTIFIER
 ,	[CurrentDuration]		INT				-- seconds
 ,	[ExecutionCount]		INT
 ,	[AverageDuration]		INT				-- seconds
 ,	[EstimatedCompletion]	SMALLDATETIME
 	CONSTRAINT PK_ActiveJobs
-		PRIMARY KEY CLUSTERED ([RefreshKey], [JobName])
+		PRIMARY KEY CLUSTERED ([RefreshKey], [job_id])
 )
 GO
 
@@ -150,13 +150,11 @@ BEGIN
 
 	;WITH CTE_JOBS_RUNNING AS (
 		SELECT
-			j.[name]
-		,	a.[job_id]
+		 	a.[job_id]
 		,	a.[start_execution_date]
 		,	a.[last_executed_step_id]
 		,	a.[last_executed_step_date]
 		FROM msdb.dbo.sysjobactivity a
-		JOIN msdb.dbo.sysjobs j ON j.job_id = a.job_id
 		LEFT JOIN [dbo].[ExcludeActiveJobs] e
 		ON e.[JobID] = a.[job_id]
 		WHERE a.session_id = @SESSION_ID
@@ -197,7 +195,7 @@ BEGIN
 
 	INSERT [dbo].[ActiveJobs] (
 		[RefreshKey]
-	,	[JobName]
+	,	[job_id]
 	,	[CurrentDuration]
 	,	[ExecutionCount]
 	,	[AverageDuration]
@@ -205,7 +203,7 @@ BEGIN
 	)
 	SELECT
 		@REFRESH_KEY
-	,	j.[name]	AS [JobName]
+	,	j.[job_id]	
 	,	DATEDIFF(second, j.[start_execution_date], GETDATE())	AS [current_duration]
 	,	d.[execution_count]
 	,	d.[average_duration]
