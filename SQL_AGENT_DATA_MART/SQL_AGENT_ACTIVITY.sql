@@ -136,6 +136,7 @@ CREATE TABLE [dbo].[ActiveJobsRefresh] (
 GO
 
 
+-- populate data mart tables with details on the currently executing SQL Agent jobs
 CREATE OR ALTER PROCEDURE [dbo].[GetActiveJobs]
 AS
 BEGIN
@@ -231,6 +232,8 @@ END
 GO
 
 
+-- Get the details on the currently runnng SQL Agent jobs; used by the 
+-- Power BI dashboard.
 CREATE OR ALTER VIEW [dbo].[vActiveJobs]
 AS
 	SELECT 
@@ -248,6 +251,21 @@ AS
 			MAX([RefreshKey])
 		FROM [dbo].[ActiveJobsRefresh]
 	);
+GO
+
+
+-- Get SQL Agent status; used by the Power BI dashboard
+SELECT 
+	status_desc
+FROM sys.dm_server_services
+WHERE servicename LIKE 'SQL Server Agent%'
+GO
+
+
+-- Get the last date and time the data mart tables were refreshed; used by the
+-- Power BI dashboard.
+SELECT MAX(RefreshDate) AS LastRefresh
+FROM [dbo].[ActiveJobsRefresh]
 GO
 
 
