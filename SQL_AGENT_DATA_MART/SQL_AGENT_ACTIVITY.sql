@@ -235,12 +235,14 @@ CREATE OR ALTER VIEW [dbo].[vActiveJobs]
 AS
 	SELECT 
 		[RefreshKey]
-	,	[JobName]
+	,	j.[name] AS [JobName]
 	,	[CurrentDuration]
 	,	[ExecutionCount]
 	,	[AverageDuration]
 	,	[EstimatedCompletion]
-	FROM [dbo].[ActiveJobs]
+	FROM [dbo].[ActiveJobs] a
+	JOIN [dbo].[Job] j 
+	ON j.[job_id] = a.[job_id]
 	WHERE [RefreshKey] = (
 		SELECT 
 			MAX([RefreshKey])
