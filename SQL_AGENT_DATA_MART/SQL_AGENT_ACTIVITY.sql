@@ -224,18 +224,20 @@ GO
 
 
 -- Get the details on the currently runnng SQL Agent jobs; used by the 
--- Power BI dashboard.
+-- Power BI dashboard. Need LEFT JOIN to include
+-- active job that doesn't exist in history. To fix
+-- run the CALCULATE JOB HISTORY job.
 CREATE OR ALTER VIEW [dbo].[vActiveJobs]
 AS
 	SELECT 
 		[RefreshKey]
-	,	j.[name] AS [JobName]
+	,	COALESCE(j.[name], CONVERT(NVARCHAR(128), a.[job_id])) AS [JobName]
 	,	[CurrentDuration]
 	,	[ExecutionCount]
 	,	[AverageDuration]
 	,	[EstimatedCompletion]
 	FROM [dbo].[ActiveJobs] a
-	JOIN [dbo].[Job] j 
+	LEFT JOIN [dbo].[Job] j 
 	ON j.[job_id] = a.[job_id]
 	WHERE [RefreshKey] = (
 		SELECT 
