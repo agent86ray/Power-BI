@@ -23,7 +23,7 @@ EXEC @ReturnCode =  msdb.dbo.sp_add_job @job_name=N'CRM SSAS CUBE PROCESS',
 		@delete_level=0, 
 		@description=N'No description available.', 
 		@category_name=N'[Uncategorized (Local)]', 
-		@owner_login_name=NULL', @job_id = @jobId OUTPUT
+		@owner_login_name=NULL, @job_id = @jobId OUTPUT
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 /****** Object:  Step [PREPARE FOR CUBE PROCESSING]    Script Date: 9/28/2020 7:27:49 AM ******/
 EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'PREPARE FOR CUBE PROCESSING', 
