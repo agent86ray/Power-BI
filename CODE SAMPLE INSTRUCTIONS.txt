@@ -9,3 +9,26 @@ T-SQL script files in the SQL_AGENT_DATA_MART folder:
   database, tables and store procedures for the history tables
 - Run SQL_AGENT_ACTIVITY.sql to create the tables, stored procedures and views
   that are used directly by the dashboard.
+
+T-SQL script files to create sample SQL Agent jobs:
+- Execute the scripts below to create the SQL Agent jobs discussed in the tip
+- CALCULATE JOB HISTORY.sql - run this job daily to recalculate the job and
+  job step durations
+- SQL AGENT DATA MART ETL - run this job to capture the currently running
+
+If you want to test with your own SQL Agent jobs:
+- Run the CALCULATE JOB HISTORY job
+- Run the SQL AGENT DATA MART ETL job 
+- Open the Power BI dashboard
+
+
+Execute the scripts below to create the sample SQL Agent jobs.
+  
+- CRM DATA MART ETL.sql - run this job; it executes CRM SSAS CUBE PROCESS
+- CRM SSAS CUBE PROCESS.sql - called by CRM DATA MART ETL; it executes 
+  CRM DASHBOARD DAILY REFRESH and CRM CUBE BACKUP
+- CRM DASHBOARD DAILY REFRESH - called by CRM SSAS CUBE PROCESS
+- CRM CUBE BACKUP - called by CRM SSAS CUBE PROCESS
+
+- EXECUTIVE DASHBOARD REFRESH.sql - run this job
+
