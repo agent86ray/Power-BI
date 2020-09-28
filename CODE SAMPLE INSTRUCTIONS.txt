@@ -32,3 +32,12 @@ Execute the scripts below to create the sample SQL Agent jobs.
 
 - EXECUTIVE DASHBOARD REFRESH.sql - run this job
 
+NOTE on the SQL Agent jobs
+- Most job steps execute the stored procedure [SimulateJobStepDuration]
+  which calls the SimulateJobStepDuration stored procedure which just
+  waits for a random number of seconds based on the parameters supplied.
+ 
+  For example: 
+      EXEC [dbo].[SimulateJobStepDuration]
+	@MINIMUM_MINUTES = 5
+      ,	@MAXIMUM_MINUTES = 15
