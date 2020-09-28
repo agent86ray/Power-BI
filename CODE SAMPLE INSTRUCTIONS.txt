@@ -1,0 +1,11 @@
+The following Power BI files are available:
+- SQL Agent Activity.pbix is the dashboard that renders the data on
+  the SQL Agent jobs currently running
+- SQL_AGENT_DATA_MART_HISTORY.pbix was used to show the data model for
+  the history tables in the data mart
+
+T-SQL script files in the SQL_AGENT_DATA_MART folder:
+- Run SQL-AGENT-DATA-MART-TSQL-SCRIPTS.sql to create SQL_AGENT_DATA_MART
+  database, tables and store procedures for the history tables
+- Run SQL_AGENT_ACTIVITY.sql to create the tables, stored procedures and views
+  that are used directly by the dashboard.
