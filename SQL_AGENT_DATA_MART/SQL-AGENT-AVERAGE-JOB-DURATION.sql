@@ -21,6 +21,10 @@
 */
 
 
+/*
+
+----------------------- NO LONGER USED -----------------------------
+
 USE SQL_AGENT_DATA_MART
 GO
 
@@ -236,4 +240,6 @@ ORDER BY [job_id], [step_id]
 
 -- TO DO: calculate COUNT(*) and AVG DURATION based on jobs run successfully
 
+
+*/
 
