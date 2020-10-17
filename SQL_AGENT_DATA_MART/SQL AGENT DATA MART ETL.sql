@@ -38,7 +38,7 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'Get Acti
 		@os_run_priority=0, @subsystem=N'TSQL', 
 		@command=N'EXEC [dbo].[GetActiveJobs]
 ', 
-		@database_name=N'SQL_AGENT_DATA_MART', 
+		@database_name=N'SQL_AGENT_DATA_MART_V1', 
 		@flags=0
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_update_job @job_id = @jobId, @start_step_id = 1

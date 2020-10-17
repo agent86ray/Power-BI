@@ -37,7 +37,7 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'LOAD Job
 		@retry_interval=0, 
 		@os_run_priority=0, @subsystem=N'TSQL', 
 		@command=N'EXEC [dbo].[LoadJob];', 
-		@database_name=N'SQL_AGENT_DATA_MART', 
+		@database_name=N'SQL_AGENT_DATA_MART_V1', 
 		@flags=0
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 /****** Object:  Step [LOAD JobInstanceTable]    Script Date: 9/28/2020 6:59:21 AM ******/
@@ -52,7 +52,7 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'LOAD Job
 		@retry_interval=0, 
 		@os_run_priority=0, @subsystem=N'TSQL', 
 		@command=N'EXEC [dbo].[LoadJobInstance];', 
-		@database_name=N'SQL_AGENT_DATA_MART', 
+		@database_name=N'SQL_AGENT_DATA_MART_V1', 
 		@flags=0
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 /****** Object:  Step [LOAD JobStepInstance Table]    Script Date: 9/28/2020 6:59:21 AM ******/
@@ -68,7 +68,7 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'LOAD Job
 		@os_run_priority=0, @subsystem=N'TSQL', 
 		@command=N'EXEC [dbo].[LoadJobStepInstance];
 ', 
-		@database_name=N'SQL_AGENT_DATA_MART', 
+		@database_name=N'SQL_AGENT_DATA_MART_V1', 
 		@flags=0
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 /****** Object:  Step [LOAD Job Step Instance All Steps Completed]    Script Date: 9/28/2020 6:59:21 AM ******/
@@ -84,7 +84,7 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'LOAD Job
 		@os_run_priority=0, @subsystem=N'TSQL', 
 		@command=N'EXEC [dbo].[LoadJobStepInstanceAllStepsCompleted];
 ', 
-		@database_name=N'SQL_AGENT_DATA_MART', 
+		@database_name=N'SQL_AGENT_DATA_MART_V1', 
 		@flags=0
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 /****** Object:  Step [CALCULATE Job Step Average Duration]    Script Date: 9/28/2020 6:59:21 AM ******/
@@ -100,7 +100,7 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'CALCULAT
 		@os_run_priority=0, @subsystem=N'TSQL', 
 		@command=N'EXEC [dbo].[CalculateJobStepAvgDuration];
 ', 
-		@database_name=N'SQL_AGENT_DATA_MART', 
+		@database_name=N'SQL_AGENT_DATA_MART_V1', 
 		@flags=0
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 /****** Object:  Step [CALCULATE Job Average Duration]    Script Date: 9/28/2020 6:59:21 AM ******/
@@ -116,7 +116,7 @@ EXEC @ReturnCode = msdb.dbo.sp_add_jobstep @job_id=@jobId, @step_name=N'CALCULAT
 		@os_run_priority=0, @subsystem=N'TSQL', 
 		@command=N'EXEC [dbo].[CalculateJobAverageDuration];
 ', 
-		@database_name=N'SQL_AGENT_DATA_MART', 
+		@database_name=N'SQL_AGENT_DATA_MART_V1', 
 		@flags=0
 IF (@@ERROR <> 0 OR @ReturnCode <> 0) GOTO QuitWithRollback
 EXEC @ReturnCode = msdb.dbo.sp_update_job @job_id = @jobId, @start_step_id = 1
