@@ -111,6 +111,8 @@ GO
 
 /*
 -- Exclude these jobs from the ActiveJobs
+TRUNCATE TABLE [dbo].[ExcludeActiveJobs] ;
+
 INSERT [dbo].[ExcludeActiveJobs] (
 	[job_id]
 )
@@ -123,8 +125,8 @@ WHERE [name] IN (
 ,	'PROCESS SQL AGENT DATA MART ACTIVITY'
 ,	'SSIS Server Maintenance Job'
 ,	'syspolicy_purge_history'
-,	'CALCULATE JOB HISTORY'
-,	'SQL AGENT DATA MART ETL'
+,	'BSSUG - CALCULATE JOB HISTORY'
+,	'BSSUG - SQL AGENT DATA MART ETL'
 );
 */
 
