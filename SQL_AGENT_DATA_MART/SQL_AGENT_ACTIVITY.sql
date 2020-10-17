@@ -4,7 +4,7 @@
 
 */
 
-USE [SQL_AGENT_DATA_MART]
+USE [SQL_AGENT_DATA_MART_V1]
 GO
 
 
@@ -112,12 +112,20 @@ GO
 /*
 -- Exclude these jobs from the ActiveJobs
 INSERT [dbo].[ExcludeActiveJobs] (
-	[JobID]
+	[job_id]
 )
 SELECT
 	[job_id]
 FROM msdb.dbo.sysjobs
-WHERE [name] = 'SQL AGENT DATA MART ETL';
+WHERE [name] IN (
+ 	'PROCESS SQL AGENT DATA MART DIMENSIONS'
+,	'PROCESS SQL AGENT DATA MART HISTORY'
+,	'PROCESS SQL AGENT DATA MART ACTIVITY'
+,	'SSIS Server Maintenance Job'
+,	'syspolicy_purge_history'
+,	'CALCULATE JOB HISTORY'
+,	'SQL AGENT DATA MART ETL'
+);
 */
 
 
